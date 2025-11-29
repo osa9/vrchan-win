@@ -52,8 +52,13 @@ jobs:
           }
           $log | Out-File -FilePath CHANGELOG_RELEASE.md -Encoding utf8
           $body = Get-Content CHANGELOG_RELEASE.md -Raw
-          $body = $body -replace '"', '\"'
-          echo "body=$body" >> $env:GITHUB_OUTPUT
+
+          # GITHUB_OUTPUT 向けにエスケープ（% / 改行）
+          $body = $body -replace '%', '%25'
+          $body = $body -replace "`r", '%0D'
+          $body = $body -replace "`n", '%0A'
+
+          "body=$body" >> $env:GITHUB_OUTPUT
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
