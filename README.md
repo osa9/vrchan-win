@@ -70,10 +70,9 @@ GitHub Release から配布される ZIP をダウンロードし、展開する
 ### Discord 設定
 
 - **Discord Webhook URL**  
-	通知を送信する Discord チャンネルの Webhook URL。
+	通知を送信する Discord チャンネルの Webhook URL。Webhook URLの取得の仕方は「Discord Webhook」などで検索すると詳細なやり方が出てきます。
 
-	Webhook の作成方法については、設定画面内のリンクラベルからブラウザを開くこともできます。
-    ![Dircord Webhookの設定イメージ](docs/dicrod.png)  
+    ![Dircord Webhookの設定イメージ](docs/discord.png)  
 
 ### 動作設定
 
@@ -181,9 +180,8 @@ GitHub Actions を利用している場合は、`main` ブランチへの push �
 
 ---
 
-## ライセンス / クレジット
+## 参考
 
 - Python 版 vrchan および関連解説記事:  
 	https://note.com/osa9/n/na04ac7f98701
 
-このリポジトリ自体のライセンスについては、ルートディレクトリの LICENSE ファイル（存在する場合）を参照してください。

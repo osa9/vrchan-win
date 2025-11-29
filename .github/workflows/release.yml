@@ -9,6 +9,9 @@ jobs:
   build-and-release:
     runs-on: windows-latest
 
+    permissions:
+      contents: write
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -29,9 +32,53 @@ jobs:
       - name: Publish (win-x64)
         run: dotnet publish VrchanWin.csproj --configuration Release --runtime win-x64 --self-contained false -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish
 
+      - name: Clean publish directory (remove PDB)
+        shell: pwsh
+        run: |
+          Get-ChildItem -Path publish -Filter *.pdb -Recurse | Remove-Item -Force
+
+      - name: Generate README PDF
+        uses: baileyjm02/markdown-to-pdf@v1
+        with:
+          input_path: README.md
+          output_dir: publish
+          build_html: false
+
+      - name: Generate README PDF
+        shell: pwsh
+        run: |
+          mkdir -Force publish
+          $html = ConvertTo-Html -Title "VrchanWin README" -Body (Get-Content README.md -Raw)
+          $htmlPath = "README_tmp.html"
+          $pdfPath = "publish/README.pdf"
+          $html | Out-File -FilePath $htmlPath -Encoding UTF8
+          Add-Type -AssemblyName System.Windows.Forms
+          Add-Type -AssemblyName System.Drawing
+          $browser = New-Object System.Windows.Forms.WebBrowser
+          $browser.ScriptErrorsSuppressed = $true
+          $browser.DocumentText = $html
+          while ($browser.ReadyState -ne 'Complete') { Start-Sleep -Milliseconds 200 }
+          $document = $browser.Document
+          $docText = $document.Body.InnerText
+          $bytes = [System.Text.Encoding]::UTF8.GetBytes($docText)
+          [System.IO.File]::WriteAllBytes($pdfPath, $bytes)
+
       - name: Create ZIP
         run: |
-          Compress-Archive -Path publish\* -DestinationPath VrchanWin.zip -Force
+          Compress-Archive -Path .\publish\* -DestinationPath VrchanWin.zip -Force
+
+      - name: Remove PDB from ZIP (fallback)
+        shell: pwsh
+        run: |
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          $zipPath = "VrchanWin.zip"
+          $tmpDir = "zip_tmp"
+          if (Test-Path $tmpDir) { Remove-Item $tmpDir -Recurse -Force }
+          [System.IO.Compression.ZipFile]::ExtractToDirectory($zipPath, $tmpDir)
+          Get-ChildItem -Path $tmpDir -Filter *.pdb -Recurse | Remove-Item -Force
+          Remove-Item $zipPath -Force
+          [System.IO.Compression.ZipFile]::CreateFromDirectory($tmpDir, $zipPath)
+          Remove-Item $tmpDir -Recurse -Force
 
       - name: Generate tag name
         id: gentag
