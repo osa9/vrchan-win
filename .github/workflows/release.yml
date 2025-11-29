@@ -32,17 +32,15 @@ jobs:
       - name: Publish (win-x64)
         run: dotnet publish VrchanWin.csproj --configuration Release --runtime win-x64 --self-contained false -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableWindowsTargeting=true -o publish
 
-      - name: Clean publish directory (remove PDB)
-        shell: pwsh
-        run: |
-          Get-ChildItem -Path publish -Filter *.pdb -Recurse | Remove-Item -Force
-
       - name: Generate README PDF
         uses: baileyjm02/markdown-to-pdf@v1
         with:
           input_path: README.md
-          output_dir: publish
+          output_dir: .
           build_html: false
+
+      - name: Move PDF to publish directory
+        run: mv README.pdf publish/
 
       - name: Create ZIP
         run: |
@@ -50,36 +48,31 @@ jobs:
           zip -r ../VrchanWin.zip .
           cd ..
 
-      - name: Remove PDB from ZIP (fallback)
-        run: |
-          zip -d VrchanWin.zip "*.pdb" || true
-
       - name: Generate tag name
         id: gentag
-        shell: pwsh
         run: |
-          $ts = Get-Date -Format 'yyyyMMdd-HHmmss'
-          echo "tag=v$ts" >> $env:GITHUB_OUTPUT
+          ts=$(date +'%Y%m%d-%H%M%S')
+          echo "tag=v$ts" >> $GITHUB_OUTPUT
 
       - name: Generate changelog
         id: changelog
-        shell: pwsh
         run: |
-          $previousTag = git describe --tags --abbrev=0 2>$null
-          if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrEmpty($previousTag)) {
-            $log = git log --pretty=format:'- %s (%h)'
-          } else {
-            $log = git log "$previousTag"..HEAD --pretty=format:'- %s (%h)'
-          }
-          $log | Out-File -FilePath CHANGELOG_RELEASE.md -Encoding utf8
-          $body = Get-Content CHANGELOG_RELEASE.md -Raw
-
+          previousTag=$(git describe --tags --abbrev=0 2>/dev/null || true)
+          if [ -z "$previousTag" ]; then
+            log=$(git log --pretty=format:'- %s (%h)')
+          else
+            log=$(git log "$previousTag"..HEAD --pretty=format:'- %s (%h)')
+          fi
+          
+          echo "$log" > CHANGELOG_RELEASE.md
+          
           # GITHUB_OUTPUT 向けにエスケープ（% / 改行）
-          $body = $body -replace '%', '%25'
-          $body = $body -replace "`r", '%0D'
-          $body = $body -replace "`n", '%0A'
-
-          "body=$body" >> $env:GITHUB_OUTPUT
+          body=$(cat CHANGELOG_RELEASE.md)
+          body="${body//'%'/'%25'}"
+          body="${body//$'\n'/'%0A'}"
+          body="${body//$'\r'/'%0D'}"
+          
+          echo "body=$body" >> $GITHUB_OUTPUT
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
