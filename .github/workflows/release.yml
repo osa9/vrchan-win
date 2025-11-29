@@ -1,0 +1,67 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Publish (win-x64)
+        run: dotnet publish VrchanWin.csproj --configuration Release --runtime win-x64 --self-contained false -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish
+
+      - name: Create ZIP
+        run: |
+          Compress-Archive -Path publish\* -DestinationPath VrchanWin.zip -Force
+
+      - name: Generate tag name
+        id: gentag
+        shell: pwsh
+        run: |
+          $ts = Get-Date -Format 'yyyyMMdd-HHmmss'
+          echo "tag=v$ts" >> $env:GITHUB_OUTPUT
+
+      - name: Generate changelog
+        id: changelog
+        shell: pwsh
+        run: |
+          $previousTag = git describe --tags --abbrev=0 2>$null
+          if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrEmpty($previousTag)) {
+            $log = git log --pretty=format:'- %s (%h)'
+          } else {
+            $log = git log "$previousTag"..HEAD --pretty=format:'- %s (%h)'
+          }
+          $log | Out-File -FilePath CHANGELOG_RELEASE.md -Encoding utf8
+          $body = Get-Content CHANGELOG_RELEASE.md -Raw
+          $body = $body -replace '"', '\"'
+          echo "body=$body" >> $env:GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.gentag.outputs.tag }}
+          name: VrchanWin ${{ steps.gentag.outputs.tag }}
+          body: ${{ steps.changelog.outputs.body }}
+          files: |
+            VrchanWin.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
