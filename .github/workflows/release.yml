@@ -44,25 +44,6 @@ jobs:
           output_dir: publish
           build_html: false
 
-      - name: Generate README PDF
-        shell: pwsh
-        run: |
-          mkdir -Force publish
-          $html = ConvertTo-Html -Title "VrchanWin README" -Body (Get-Content README.md -Raw)
-          $htmlPath = "README_tmp.html"
-          $pdfPath = "publish/README.pdf"
-          $html | Out-File -FilePath $htmlPath -Encoding UTF8
-          Add-Type -AssemblyName System.Windows.Forms
-          Add-Type -AssemblyName System.Drawing
-          $browser = New-Object System.Windows.Forms.WebBrowser
-          $browser.ScriptErrorsSuppressed = $true
-          $browser.DocumentText = $html
-          while ($browser.ReadyState -ne 'Complete') { Start-Sleep -Milliseconds 200 }
-          $document = $browser.Document
-          $docText = $document.Body.InnerText
-          $bytes = [System.Text.Encoding]::UTF8.GetBytes($docText)
-          [System.IO.File]::WriteAllBytes($pdfPath, $bytes)
-
       - name: Create ZIP
         run: |
           Compress-Archive -Path ./publish/* -DestinationPath VrchanWin.zip -Force
