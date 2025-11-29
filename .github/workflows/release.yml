@@ -35,9 +35,11 @@ jobs:
       - name: Generate README PDF
         uses: baileyjm02/markdown-to-pdf@v1
         with:
-          input_path: .
-          output_dir: publish
+          input_path: README.md
           build_html: false
+
+      - name: Move PDF to publish directory
+        run: mv README.pdf publish/
 
       - name: Create ZIP
         run: |
