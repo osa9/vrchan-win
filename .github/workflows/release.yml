@@ -7,7 +7,7 @@ on:
 
 jobs:
   build-and-release:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
 
     permissions:
       contents: write
@@ -65,7 +65,7 @@ jobs:
 
       - name: Create ZIP
         run: |
-          Compress-Archive -Path .\publish\* -DestinationPath VrchanWin.zip -Force
+          Compress-Archive -Path ./publish/* -DestinationPath VrchanWin.zip -Force
 
       - name: Remove PDB from ZIP (fallback)
         shell: pwsh
