@@ -46,20 +46,13 @@ jobs:
 
       - name: Create ZIP
         run: |
-          Compress-Archive -Path ./publish/* -DestinationPath VrchanWin.zip -Force
+          cd publish
+          zip -r ../VrchanWin.zip .
+          cd ..
 
       - name: Remove PDB from ZIP (fallback)
-        shell: pwsh
         run: |
-          Add-Type -AssemblyName System.IO.Compression.FileSystem
-          $zipPath = "VrchanWin.zip"
-          $tmpDir = "zip_tmp"
-          if (Test-Path $tmpDir) { Remove-Item $tmpDir -Recurse -Force }
-          [System.IO.Compression.ZipFile]::ExtractToDirectory($zipPath, $tmpDir)
-          Get-ChildItem -Path $tmpDir -Filter *.pdb -Recurse | Remove-Item -Force
-          Remove-Item $zipPath -Force
-          [System.IO.Compression.ZipFile]::CreateFromDirectory($tmpDir, $zipPath)
-          Remove-Item $tmpDir -Recurse -Force
+          zip -d VrchanWin.zip "*.pdb" || true
 
       - name: Generate tag name
         id: gentag
