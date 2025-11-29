@@ -30,12 +30,12 @@ jobs:
         run: dotnet build --configuration Release --no-restore -p:EnableWindowsTargeting=true
 
       - name: Publish (win-x64)
-        run: dotnet publish VrchanWin.csproj --configuration Release --runtime win-x64 --self-contained false -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableWindowsTargeting=true -o publish
+        run: dotnet publish VrchanWin.csproj --configuration Release --runtime win-x64 --self-contained false -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableWindowsTargeting=true -p:DebugType=None -p:DebugSymbols=false -o publish
 
       - name: Generate README PDF
         uses: baileyjm02/markdown-to-pdf@v1
         with:
-          input_path: README.md
+          input_path: .
           output_dir: publish
           build_html: false
 
